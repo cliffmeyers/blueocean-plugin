@@ -19,7 +19,7 @@ export class TimeSkew {
 
     transformDatesString(datesString) {
         let result;
-        let fixedString = datesString;
+        const transforms = [];
 
         while ((result = J_DATE_ANY.exec(datesString)) !== null) {
             // convert to a moment object that preserves time zone info
@@ -29,12 +29,19 @@ export class TimeSkew {
             // since the skew is assumed to future, we subtract to adjust to local clock
             date.subtract(this.skewMillis, 'milliseconds');
 
-            fixedString = fixedString.slice(0, result.index) +
-                    date.format(J_DATE_FORMAT) +
-                    fixedString.slice(J_DATE_ANY.lastIndex);
+            transforms.push({
+                index: result.index,
+                date: date.format(J_DATE_FORMAT),
+            });
         }
 
-        return fixedString;
+        const charArray = datesString.split('');
+
+        for (const transform of transforms) {
+            charArray.splice(transform.index, transform.date.length, ...transform.date.split(''));
+        }
+
+        return charArray.join('');
     }
 
 }
