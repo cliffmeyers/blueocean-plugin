@@ -126,7 +126,6 @@ gulp.task('test-jest', () => {
 gulp.task('test-jest-fast', () =>
     runJest({
         notify: true,
-        forceExit: true,
         config: {
             testMatch: config.test.match,
         },
@@ -136,7 +135,6 @@ gulp.task('test-jest-fast', () =>
 gulp.task('test-jest-debug', () =>
     runJest({
         runInBand: true,
-        forceExit: true,
         config: {
             testMatch: config.test.match,
         },
