@@ -48,6 +48,10 @@ export class TimeSkew {
             });
         }
 
+        if (this.debugEnabled) {
+            this.debugInfo.valuesTransformed = transforms.length;
+        }
+
         const charArray = datesString.split('');
 
         for (const transform of transforms) {

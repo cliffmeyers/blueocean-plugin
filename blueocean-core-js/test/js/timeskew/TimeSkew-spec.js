@@ -59,9 +59,11 @@ describe('TimeSkew', () => {
         it('doesnt error for arbitrary large data', () => {
             const dateString = JSON.stringify(activity);
             const begin = Date.now();
+            timeSkew.enableDebug();
             const fixedString = timeSkew.transformDatesString(dateString);
             console.log('transformDatesString took ', Date.now() - begin, 'ms');
             JSON.parse(fixedString);
+            console.log(timeSkew.debugInfo);
         });
     });
 
