@@ -13,3 +13,4 @@ require('./moments');
 require('./pipelines');
 require('./RunDetailsHeaderStories');
 require('./status');
+require('./dnd');
