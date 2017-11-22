@@ -1,6 +1,8 @@
 // @flow
 
 import React, { Component } from 'react';
+import { DragDropContext, Droppable } from 'react-beautiful-dnd';
+
 import { EditorPipelineGraph } from './EditorPipelineGraph';
 import { EditorStepList } from './EditorStepList';
 import { EditorStepDetails } from './EditorStepDetails';
@@ -203,6 +205,20 @@ export class EditorMain extends Component<DefaultProps, Props, State> {
         pipelineValidator.validate();
     }
 
+    onStepDragStart = (result) => {
+        console.log('onStepDragStart', result);
+    };
+
+    onStepDragEnd = (result) => {
+        console.log('onStepDragEnd', result);
+    };
+
+    getListStyle = (isDraggingOver) => {
+        return {
+            background: isDraggingOver ? '#eee' : 'white',
+        };
+    };
+
     render() {
         const { selectedStage, selectedSteps, stepMetadata } = this.state;
 
@@ -258,10 +274,22 @@ export class EditorMain extends Component<DefaultProps, Props, State> {
                     <Accordion show={sectionErrors.show} key={'stageSections' + selectedStage.id}>
                         {!hasChildStages &&
                         <div title="Steps" key="steps">
-                            <EditorStepList steps={steps}
+                            <Droppable droppableId="editor-step-droppable">
+                                {(provided, snapshot) => (
+                                    <div
+                                        ref={provided.innerRef}
+                                        style={this.getListStyle(snapshot.isDraggingOver)}
+                                    >
+                                        <EditorStepList
+                                            steps={steps}
                                             onAddStepClick={() => this.openSelectStepDialog()}
                                             onAddChildStepClick={parent => this.openSelectStepDialog(parent)}
-                                            onStepSelected={(step) => this.selectedStepChanged(step)}/>
+                                            onStepSelected={(step) => this.selectedStepChanged(step)}
+                                        />
+                                        {provided.placeholder}
+                                    </div>
+                                )}
+                            </Droppable>
                         </div>
                         }
                         <div title="Settings" className="editor-stage-settings" key="settings">
@@ -313,9 +341,11 @@ export class EditorMain extends Component<DefaultProps, Props, State> {
                                          onCreateStage={(parentStage) => this.createStage(parentStage)}/>
                     }
                 </div>
-                <Sheets>
-                {sheets}
-                </Sheets>
+                <DragDropContext onDragStart={this.onStepDragStart} onDragEnd={this.onStepDragEnd}>
+                    <Sheets>
+                    {sheets}
+                    </Sheets>
+                </DragDropContext>
                 {this.state.dialog}
             </div>
         );

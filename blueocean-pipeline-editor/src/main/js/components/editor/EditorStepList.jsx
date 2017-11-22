@@ -1,6 +1,8 @@
 // @flow
 
 import React, { Component, PropTypes } from 'react';
+import { Draggable } from 'react-beautiful-dnd';
+
 import pipelineMetadataService, { getArg } from '../../services/PipelineMetadataService';
 import type { StepInfo } from '../../services/PipelineStore';
 import { Icon } from '@jenkins-cd/design-language';
@@ -25,6 +27,14 @@ function ChildStepIcon() {
             <path d="M19 15l-6 6-1.42-1.42L15.17 16H4V4h2v10h9.17l-3.59-3.58L13 9l6 6z"/>
         </svg>
     </div>);
+}
+
+function DragHandleIcon(props) {
+    return (
+        <div className="editor-step-drag" {...props}>
+            <Icon icon="EditorDragHandle" />
+        </div>
+    );
 }
 
 export class EditorStepList extends Component<DefaultProps, Props, State> {
@@ -88,38 +98,59 @@ export class EditorStepList extends Component<DefaultProps, Props, State> {
         return steps.map(step => this.renderStep(step, parent));
     }
 
+    getItemStyle = (draggableStyle, isDragging) => {
+        return {
+            width: '100%',
+            background: isDragging ? 'lightgreen' : 'transparent',
+            ...draggableStyle,
+        };
+    };
+
     renderStep(step:StepInfo, parent: StepInfo) {
         const thisMeta = this.state.stepMetadata.find(step);
         const classNames = ["editor-step"];
         const errors = pipelineValidator.getNodeValidationErrors(step);
+        const key = 's_' + step.id;
+        console.log('key', key);
         if (parent) classNames.push('nested');
         if (errors) classNames.push('errors');
 
         return (
-            <div className={classNames.join(' ')} key={'s_' + step.id}>
-                <div className="editor-step-main" onClick={(e) => this.stepClicked(step, e)}>
-                    <div className="editor-step-content">
-                        {parent && <ChildStepIcon/>}
-                        <div className="editor-step-title">
-                            <span className="editor-step-label">{step.label}</span>
-                            {!errors && <span className="editor-step-summary">
-                                {thisMeta && thisMeta.parameters.filter(p => p.isRequired).map(p =>
-                                    <span>{getArg(step, p.name).value} </span>
-                                )}
-                                </span>
-                            }
-                            {errors && <span className="editor-step-errors">
-                                {errors.map(err =>
-                                    <div>{err.error ? err.error : err}</div>
-                                )}
-                                </span>
-                            }
-                        </div>
-                    </div>
+            <Draggable key={key} draggableId={key}>
+                {(provided, snapshot) => (
+                    <div className={classNames.join(' ')}>
+                        <div
+                            ref={provided.innerRef}
+                            style={this.getItemStyle(provided.draggableStyle, snapshot.isDragging)}
+                        >
+                            <div className="editor-step-main" onClick={(e) => this.stepClicked(step, e)}>
+                                <div className="editor-step-content">
+                                    {parent && <ChildStepIcon/>}
+                                    <div className="editor-step-title">
+                                        <span className="editor-step-label">{step.label}</span>
+                                        {!errors && <span className="editor-step-summary">
+                                        {thisMeta && thisMeta.parameters.filter(p => p.isRequired).map(p =>
+                                            <span>{getArg(step, p.name).value} </span>
+                                        )}
+                                        </span>
+                                        }
+                                        {errors && <span className="editor-step-errors">
+                                        {errors.map(err =>
+                                            <div>{err.error ? err.error : err}</div>
+                                        )}
+                                        </span>
+                                        }
+                                    </div>
+                                    <DragHandleIcon {...provided.dragHandleProps} />
+                                </div>
 
-                    {step.isContainer && this.renderSteps(step.children, step)}
-                </div>
-            </div>
+                                {step.isContainer && this.renderSteps(step.children, step)}
+                            </div>
+                        </div>
+                        {provided.placeholder}
+                    </div>
+                )}
+            </Draggable>
         );
     }
 
