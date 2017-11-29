@@ -3,7 +3,7 @@ import { storiesOf } from '@kadira/storybook';
 
 import Container from './Container';
 
-storiesOf('test 1', module)
+storiesOf('react-dnd', module)
     .add('Container', containerStory)
 ;
 

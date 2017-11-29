@@ -8,11 +8,25 @@ const style = {
     width: 400,
 };
 
+function transformData(data, sourceIndex, targetIndex) {
+    if (sourceIndex !== targetIndex) {
+        console.log(`move ${sourceIndex} to ${targetIndex}`);
+        const copy = data.slice();
+        const sourceItem = copy[sourceIndex];
+        copy.splice(sourceIndex, 1);
+        copy.splice(targetIndex, 0, sourceItem);
+        return copy;
+    }
+
+    return false;
+}
+
 @DragDropContext(HTML5Backend)
 export class Container extends Component {
     constructor(props) {
         super(props)
-        this.moveCard = this.moveCard.bind(this)
+        this.moveCard = this.moveCard.bind(this);
+        this.dropCard = this.dropCard.bind(this);
         this.state = {
             cards: [
                 {
@@ -48,15 +62,23 @@ export class Container extends Component {
         }
     }
 
-    moveCard(dragIndex, hoverIndex) {
-        const { cards } = this.state;
-        const dragCard = cards[dragIndex];
+    moveCard(originalIndex, hoverIndex) {
+        console.log('new drag position! originalIndex', originalIndex, 'hoverIndex', hoverIndex);
+    }
 
-        console.log('dragIndex', dragIndex, 'hoverIndex', hoverIndex);
+    dropCard(originalIndex, newIndex) {
+        console.log('drop card', originalIndex, newIndex);
+        const copy = transformData(this.state.cards, originalIndex, newIndex);
 
-        this.setState({
-            cards,
-        });
+        if (copy) {
+            this.setState({
+                cards: copy,
+            });
+        }
+    }
+
+    renderList(cards) {
+
     }
 
     render() {
@@ -71,6 +93,7 @@ export class Container extends Component {
                         id={card.id}
                         text={card.text}
                         moveCard={this.moveCard}
+                        dropCard={this.dropCard}
                     />
                 ))}
             </div>
