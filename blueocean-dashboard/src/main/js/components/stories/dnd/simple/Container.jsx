@@ -2,7 +2,8 @@
 import React, { Component } from 'react';
 import { DragDropContext } from 'react-dnd';
 import HTML5Backend from 'react-dnd-html5-backend';
-import Card from './Card';
+import { CardList } from './CardList';
+import { Card } from './Card';
 
 const style = {
     width: 400,
@@ -44,6 +45,12 @@ export class Container extends Component {
                 {
                     id: 4,
                     text: 'Create some examples',
+                    children: [
+                        {
+                            id: 41,
+                            text: 'Child 1'
+                        }
+                    ]
                 },
                 {
                     id: 5,
@@ -62,12 +69,28 @@ export class Container extends Component {
         }
     }
 
-    moveCard(originalIndex, hoverIndex) {
-        console.log('new drag position! originalIndex', originalIndex, 'hoverIndex', hoverIndex);
+    moveCard(currentPosition) {
+        console.log('moving! ', currentPosition);
+        /*
+        const cards = this.state.cards.slice();
+
+        for (const card of cards) {
+            if (card.id === currentPosition.id) {
+                card.below = currentPosition.below;
+                console.log('updating card.below to ', card.below);
+                break;
+            }
+        }
+
+        this.setState({
+            cards
+        });
+        */
     }
 
-    dropCard(originalIndex, newIndex) {
-        console.log('drop card', originalIndex, newIndex);
+    dropCard(currentPosition) {
+        console.log('dropped', currentPosition);
+        /*
         const copy = transformData(this.state.cards, originalIndex, newIndex);
 
         if (copy) {
@@ -75,10 +98,7 @@ export class Container extends Component {
                 cards: copy,
             });
         }
-    }
-
-    renderList(cards) {
-
+        */
     }
 
     render() {
@@ -86,16 +106,11 @@ export class Container extends Component {
 
         return (
             <div style={style}>
-                {cards.map((card, i) => (
-                    <Card
-                        key={card.id}
-                        index={i}
-                        id={card.id}
-                        text={card.text}
-                        moveCard={this.moveCard}
-                        dropCard={this.dropCard}
-                    />
-                ))}
+                <CardList
+                    cards={cards}
+                    moveCard={this.moveCard}
+                    dropCard={this.dropCard}
+                />
             </div>
         );
     }

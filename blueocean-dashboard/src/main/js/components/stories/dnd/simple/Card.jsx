@@ -6,6 +6,8 @@ import { DragSource, DropTarget } from 'react-dnd';
 import ItemTypes from './ItemTypes';
 
 const style = {
+    display: 'flex',
+    justifyContent: 'space-between',
     border: '1px dashed gray',
     padding: '0.5rem 1rem',
     marginBottom: '.5rem',
@@ -13,102 +15,128 @@ const style = {
     cursor: 'move',
 };
 
+class ItemDragPosition {
+    id = null;
+    below = false;
+
+    constructor(id, below) {
+        this.id = id;
+        this.below = below;
+    }
+
+    equals(position) {
+        return position && this.id === position.id && this.below === position.below;
+    }
+}
+
+function calculateVerticalDragPosition(component, clientOffset) {
+    const hoverBoundingRect = findDOMNode(component).getBoundingClientRect();
+    const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+    const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+    const below = hoverClientY >= hoverMiddleY;
+    return new ItemDragPosition(component.props.id, below);
+}
+
+function dragSourceCollector(connect, monitor) {
+    return {
+        connectDragSource: connect.dragSource(),
+        connectDragPreview: connect.dragPreview(),
+        isDragging: monitor.isDragging(),
+        isHovering: false,
+    };
+}
+
+function dropTargetCollector(connect, monitor) {
+    const item = monitor.getItem() || {};
+
+    return {
+        connectDropTarget: connect.dropTarget(),
+        isHovering: monitor.isOver(),
+        hoverBelow: item && item.lastPosition && item.lastPosition.below,
+        lastPosition: item && item.lastPosition,
+    };
+}
+
+
 const cardSource = {
     beginDrag(props) {
         console.log('beginDrag', props);
+
         return {
             id: props.id,
-            originalIndex: props.index,
-            lastDraggedIndex: props.index,
+            lastPosition: null,
         };
     },
 };
 
 const cardTarget = {
     hover(props, monitor, component) {
-        const { originalIndex, lastDraggedIndex } = monitor.getItem();
-        const hoverIndex = props.index;
+        const { lastPosition } = monitor.getItem();
 
-        // Don't replace items with themselves
-        if (originalIndex === hoverIndex) {
-            return
-        }
+        const currentPosition = calculateVerticalDragPosition(
+            component,
+            monitor.getClientOffset(),
+        );
 
-        if (hoverIndex === lastDraggedIndex) {
+        if (currentPosition.equals(lastPosition)) {
             return;
         }
 
-        // Determine rectangle on screen
-        const hoverBoundingRect = findDOMNode(component).getBoundingClientRect()
-
-        // Get vertical middle
-        const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2
-
-        // Determine mouse position
-        const clientOffset = monitor.getClientOffset()
-
-        // Get pixels to the top
-        const hoverClientY = clientOffset.y - hoverBoundingRect.top
-
-        // Only perform the move when the mouse has crossed half of the items height
-        // When dragging downwards, only move when the cursor is below 50%
-        // When dragging upwards, only move when the cursor is above 50%
-
-        // Dragging downwards
-        if (originalIndex < hoverIndex && hoverClientY < hoverMiddleY) {
-            return;
-        }
-
-        // Dragging upwards
-        if (originalIndex > hoverIndex && hoverClientY > hoverMiddleY) {
-            return;
-        }
-
-        // Time to actually perform the action
-        props.moveCard(originalIndex, hoverIndex);
-
-        // Note: we're mutating the monitor item here!
-        // Generally it's better to avoid mutations,
-        // but it's good here for the sake of performance
-        // to avoid expensive index searches.
-        monitor.getItem().lastDraggedIndex = hoverIndex;
+        props.moveCard(currentPosition);
+        monitor.getItem().lastPosition = currentPosition;
     },
     drop(props, monitor) {
-        const { originalIndex, lastDraggedIndex } = monitor.getItem();
-        props.dropCard(originalIndex, lastDraggedIndex);
+        const { lastPosition } = monitor.getItem();
+        props.dropCard(lastPosition);
     }
-}
+};
 
-@DropTarget(ItemTypes.CARD, cardTarget, connect => ({
-    connectDropTarget: connect.dropTarget(),
-}))
-@DragSource(ItemTypes.CARD, cardSource, (connect, monitor) => ({
-    connectDragSource: connect.dragSource(),
-    isDragging: monitor.isDragging(),
-}))
-export default class Card extends Component {
+@DragSource(ItemTypes.CARD, cardSource, dragSourceCollector)
+@DropTarget(ItemTypes.CARD, cardTarget, dropTargetCollector)
+class Card extends Component {
     static propTypes = {
-        connectDragSource: PropTypes.func.isRequired,
-        connectDropTarget: PropTypes.func.isRequired,
-        index: PropTypes.number.isRequired,
-        isDragging: PropTypes.bool.isRequired,
         id: PropTypes.any.isRequired,
         text: PropTypes.string.isRequired,
         moveCard: PropTypes.func.isRequired,
         dropCard: PropTypes.func.isRequired,
-    }
+
+        connectDragSource: PropTypes.func.isRequired,
+        connectDragPreview: PropTypes.func,
+        connectDropTarget: PropTypes.func.isRequired,
+        isDragging: PropTypes.bool,
+        isHovering: PropTypes.bool,
+    };
 
     render() {
         const {
             text,
             isDragging,
+            isHovering,
             connectDragSource,
+            connectDragPreview,
             connectDropTarget,
-        } = this.props
-        const opacity = isDragging ? 0 : 1
+        } = this.props;
 
-        return connectDragSource(
-            connectDropTarget(<div style={{ ...style, opacity }}>{text}</div>),
-        )
+        const opacity = isDragging ? 0 : 1;
+
+        const divStyles = {
+            ...style,
+            opacity,
+        };
+
+        if (isHovering) {
+            divStyles.backgroundColor = '#ccc';
+        }
+
+        return connectDragPreview(
+            connectDropTarget(
+                <div style={divStyles}>
+                    <span>{text}</span>
+                    {connectDragSource(<span>HH</span>)}
+                </div>
+            )
+        );
     }
 }
+
+export { Card }
